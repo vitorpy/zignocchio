@@ -1,11 +1,12 @@
 # Solana BPF Programs with Zig + sbpf-linker
 
-A minimal template for building Solana BPF programs using standard Zig compiler and [sbpf-linker](https://github.com/blueshift-gg/sbpf-linker).
+Build Solana programs in Zig using the standard BPF target and [sbpf-linker](https://github.com/blueshift-gg/sbpf-linker).
 
 ## Features
 
 - ✅ Uses standard Zig BPF target (no custom forks)
-- ✅ Zero external dependencies (no SDK needed)
+- ✅ Zero external dependencies
+- ✅ **Zignocchio SDK** - Full-featured Zig SDK for Solana
 - ✅ LLVM bitcode generation via `-femit-llvm-bc`
 - ✅ Direct syscall invocation via function pointers
 - ✅ Auto-generated syscall bindings with MurmurHash3
@@ -82,15 +83,69 @@ zig build-lib -target bpfel-freestanding -femit-llvm-bc=entrypoint.bc
 sbpf-linker --cpu v3 --export entrypoint -o program.so entrypoint.bc
 ```
 
+## Zignocchio SDK
+
+This project includes **Zignocchio**, a zero-dependency SDK for building Solana programs in Zig, inspired by [Pinocchio](https://github.com/anza-xyz/pinocchio).
+
+### Quick Example
+
+```zig
+const sdk = @import("sdk/zignocchio.zig");
+
+export fn entrypoint(input: [*]u8) u64 {
+    return @call(.always_inline, sdk.createEntrypoint(processInstruction), .{input});
+}
+
+fn processInstruction(
+    program_id: *const sdk.Pubkey,
+    accounts: []sdk.AccountInfo,
+    instruction_data: []const u8,
+) sdk.ProgramResult {
+    sdk.logMsg("Hello from Zignocchio!");
+
+    const account = accounts[0];
+    var data = try account.tryBorrowMutData();
+    defer data.release();
+
+    data.value[0] = 42;
+
+    return .{};
+}
+```
+
+### SDK Features
+
+- **Zero-copy input deserialization** - Direct memory access to Solana's input buffer
+- **RAII borrow tracking** - Safe mutable access with automatic cleanup
+- **Type-safe API** - Strong typing for all Solana primitives
+- **PDAs** - Program Derived Address functions
+- **CPI** - Cross-program invocation support
+- **Efficient** - Bit-packed borrow state, optimized syscalls
+
+See [`sdk/README.md`](sdk/README.md) for complete documentation and [`examples/`](examples/) for working programs.
+
 ## Project Structure
 
 ```
 .
 ├── build.zig              # Automated build pipeline
 ├── build.zig.zon          # Zero dependencies
+├── sdk/                   # Zignocchio SDK
+│   ├── zignocchio.zig     # Main SDK module
+│   ├── types.zig          # Core types (Pubkey, AccountInfo)
+│   ├── entrypoint.zig     # Input deserialization
+│   ├── syscalls.zig       # Auto-generated syscalls
+│   ├── pda.zig            # Program Derived Addresses
+│   ├── cpi.zig            # Cross-program invocation
+│   ├── allocator.zig      # BumpAllocator
+│   ├── log.zig            # Logging utilities
+│   └── errors.zig         # Error types
+├── examples/              # Example programs
+│   ├── hello.zig          # Minimal example
+│   └── counter.zig        # Full-featured example
 ├── src/
-│   ├── entrypoint.zig     # Program entrypoint
-│   └── syscalls.zig       # Auto-generated syscall bindings
+│   ├── entrypoint.zig     # Original simple entrypoint
+│   └── syscalls.zig       # Syscall bindings
 ├── tools/
 │   ├── murmur3.zig        # MurmurHash3-32 implementation
 │   ├── syscall_defs.zig   # Syscall definitions
