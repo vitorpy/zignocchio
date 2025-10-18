@@ -15,9 +15,6 @@ fn processInstruction(
     _: []sdk.AccountInfo,
     _: []const u8,
 ) sdk.ProgramResult {
-    // Inline the message to prevent .rodata stripping
-    const message = [_]u8{ 'H', 'e', 'l', 'l', 'o', ' ', 'f', 'r', 'o', 'm', ' ', 'Z', 'i', 'g', 'n', 'o', 'c', 'c', 'h', 'i', 'o', '!' };
-    sdk.logMsg(&message);
-
+    sdk.logMsg("Hello from Zignocchio!");
     return {};
 }

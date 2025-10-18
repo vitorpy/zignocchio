@@ -29,7 +29,7 @@ describe('Hello World Program', () => {
 
     // Build the hello program
     console.log('Building hello program...');
-    execSync('zig build', { stdio: 'inherit' });
+    execSync('zig build -Dexample=hello', { stdio: 'inherit' });
 
     // Generate program keypair for deployment
     const programKeypair = Keypair.generate();

@@ -1,6 +1,20 @@
 # Zignocchio Examples
 
-Example programs demonstrating the Zignocchio SDK.
+Example programs demonstrating the Zignocchio SDK for building Solana programs in Zig.
+
+## Quick Start
+
+```bash
+# Build the hello world example
+zig build -Dexample=hello
+
+# Run its test (requires solana-test-validator)
+npx jest examples/hello.test.ts
+```
+
+Expected output: `✓ 2 tests passed` with "Hello from Zignocchio!" in the logs.
+
+---
 
 ## Programs
 
@@ -31,53 +45,131 @@ A counter program that stores and increments a u64 value.
 
 ## Building
 
-The default build target is `hello.zig`. To build:
-
+Build the **counter** example (default):
 ```bash
 zig build
+# or explicitly
+zig build -Dexample=counter
 ```
 
-To build the counter example instead, edit `build.zig` and change:
-```zig
-"-Mroot=examples/hello.zig",
+Build the **hello** example:
+```bash
+zig build -Dexample=hello
 ```
-to:
-```zig
-"-Mroot=examples/counter.zig",
-```
+
+The compiled program will be at: `zig-out/lib/program_name.so`
+
+### Build Requirements
+
+- **Zig compiler** - Tested with Zig 0.13+
+- **sbpf-linker** - Custom linker for Solana BPF programs (in `../sbpf-linker`)
+- **LLVM** - For generating BPF bytecode
+
+### Build Process
+
+The build system uses a two-stage compilation:
+
+1. **Zig → LLVM Bitcode**: Compiles Zig source to `.bc` (LLVM bitcode)
+   - Target: `bpfel-freestanding` (BPF little-endian, freestanding)
+   - CPU: `v2` (BPF ISA v2 - compatible with Solana sBPF)
+   - Optimization: `ReleaseSmall` (minimal size)
+
+2. **sbpf-linker → ELF**: Links bitcode into Solana-compatible ELF
+   - Handles relocations for `.rodata` sections
+   - Exports the `entrypoint` function
+   - Produces stripped, dynamically linked ELF
 
 ## Testing
 
-Each example has its own test file:
+Each example has its own test file that automatically builds the correct program:
 
 - `hello.test.ts` - Tests for the hello world program
 - `counter.test.ts` - Tests for the counter program
 
-Run all tests:
+### Prerequisites
+
+Install dependencies (if you haven't already):
+```bash
+npm install
+```
+
+Make sure `solana-test-validator` is installed and in your PATH:
+```bash
+solana-test-validator --version
+```
+
+### Running Tests
+
+Run **all tests**:
 ```bash
 npm test
 ```
 
-Run a specific test:
+Run a **specific test**:
 ```bash
+# Hello world test only
 npx jest examples/hello.test.ts
+
+# Counter test only
 npx jest examples/counter.test.ts
 ```
 
-### What the tests cover
+### What the tests do
 
-**hello.test.ts:**
-- Program executes successfully
-- Logs "Hello from Zignocchio!" message
-- Returns success (no errors)
+Each test:
+1. Automatically builds the correct program (`zig build -Dexample=hello` or `counter`)
+2. Starts a fresh `solana-test-validator` instance
+3. Deploys the program to the validator
+4. Funds a test account
+5. Executes transactions against the program
+6. Verifies logs and behavior
+7. Cleans up the validator
 
-**counter.test.ts:**
-- Creates a counter account
-- Increment operation (default and explicit)
-- Decrement operation
-- Reset operation
-- Proper logging of operations
-- Error handling for invalid operations
+**hello.test.ts covers:**
+- ✓ Program executes successfully
+- ✓ Logs "Hello from Zignocchio!" message
+- ✓ Returns success with no errors
+- ✓ Uses minimal compute units (~107 CU)
+
+**counter.test.ts covers:**
+- ✓ Creates a counter account with proper size
+- ✓ Increment operation (default and explicit instruction)
+- ✓ Decrement operation
+- ✓ Reset operation
+- ✓ Proper logging of counter values
+- ✓ Error handling for invalid operations
+- ✓ Overflow/underflow protection
+
+### Test Output Example
+
+Successful test run:
+```
+PASS examples/hello.test.ts
+  Hello World Program
+    ✓ should execute and log "Hello from Zignocchio!" (361 ms)
+    ✓ should succeed with no errors (8107 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+```
+
+### Troubleshooting
+
+**Validator timeout**: If tests hang, kill any existing validator:
+```bash
+pkill -f solana-test-validator
+```
+
+**Port in use**: The validator uses port 8899. Make sure it's not in use:
+```bash
+lsof -i :8899
+```
+
+**Build errors**: Make sure sbpf-linker is built:
+```bash
+cd ../sbpf-linker
+cargo build
+```
 
 ## Learning Path
 
@@ -110,6 +202,12 @@ The SDK provides strong typing for all Solana primitives:
 
 ### Efficient Compute Usage
 - Zero-copy deserialization
-- Inline string data (no .rodata)
+- Minimal .rodata footprint (strings handled efficiently)
 - Optimized pubkey comparison (8 bytes at a time)
 - Minimal overhead borrowing system
+
+### BPF ISA Compatibility
+- Uses BPF ISA v2 (compatible with Solana sBPF)
+- No 32-bit jump instructions (which conflict with Solana PQR opcodes)
+- Custom sbpf-linker handles LLVM's `.rodata.str1.1` sections
+- Stripped, position-independent code for minimal size

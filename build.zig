@@ -6,12 +6,15 @@ const std = @import("std");
 pub fn build(b: *std.Build) !void {
     const optimize = .ReleaseSmall;
 
+    // Build option: which example to build (hello or counter)
+    const example_name = b.option([]const u8, "example", "Example to build (hello or counter)") orelse "counter";
+
     // Step 1: Generate LLVM bitcode using zig build-lib
-    // Change this to counter.zig for the full-featured example
     const bitcode_path = "entrypoint.bc";
 
     // Copy example to root for compilation (workaround for module paths)
-    const copy_example = b.addSystemCommand(&.{ "cp", "examples/counter.zig", "temp_example.zig" });
+    const example_path = b.fmt("examples/{s}.zig", .{example_name});
+    const copy_example = b.addSystemCommand(&.{ "cp", example_path, "temp_example.zig" });
 
     const gen_bitcode = b.addSystemCommand(&.{
         "zig",
@@ -30,7 +33,7 @@ pub fn build(b: *std.Build) !void {
     const program_so_path = "zig-out/lib/program_name.so";
     const link_program = b.addSystemCommand(&.{
         "../sbpf-linker/target/debug/sbpf-linker",
-        "--cpu", "v3",
+        "--cpu", "v2",  // v2: No 32-bit jumps (Solana sBPF compatible)
         "--export", "entrypoint",
         "-o", program_so_path,
         bitcode_path,

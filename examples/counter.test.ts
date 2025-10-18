@@ -29,20 +29,9 @@ describe('Counter Program', () => {
     // Wait a bit for cleanup
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Update build.zig to use counter.zig
-    const buildZig = fs.readFileSync('build.zig', 'utf8');
-    const updatedBuild = buildZig.replace(
-      '"examples/hello.zig"',
-      '"examples/counter.zig"'
-    );
-    fs.writeFileSync('build.zig', updatedBuild);
-
     // Build the counter program
     console.log('Building counter program...');
-    execSync('zig build', { stdio: 'inherit' });
-
-    // Restore build.zig
-    fs.writeFileSync('build.zig', buildZig);
+    execSync('zig build -Dexample=counter', { stdio: 'inherit' });
 
     // Generate program keypair for deployment
     const programKeypair = Keypair.generate();

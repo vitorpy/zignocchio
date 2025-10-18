@@ -106,8 +106,9 @@ fn processInstruction(
     sdk.logU64(counter_ptr.*);
 
     // Log remaining compute units
-    sdk.logMsg("Remaining compute units:");
-    sdk.logU64(sdk.getRemainingComputeUnits());
+    // NOTE: Commented out to avoid needing to patch sbpf with sol_remaining_compute_units syscall
+    // sdk.logMsg("Remaining compute units:");
+    // sdk.logU64(sdk.getRemainingComputeUnits());
 
     return {};
 }
