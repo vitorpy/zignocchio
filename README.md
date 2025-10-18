@@ -142,13 +142,14 @@ See [`sdk/README.md`](sdk/README.md) for complete documentation and [`examples/`
 │   └── errors.zig         # Error types
 ├── examples/              # Example programs
 │   ├── hello.zig          # Minimal example (default build target)
-│   └── counter.zig        # Full-featured example
-├── tools/
-│   ├── murmur3.zig        # MurmurHash3-32 implementation
-│   ├── syscall_defs.zig   # Syscall definitions
-│   └── gen_syscalls.zig   # Syscall generator
-└── test/
-    └── program.test.ts    # Integration tests
+│   ├── counter.zig        # Full-featured example
+│   ├── hello.test.ts      # Tests for hello program
+│   ├── counter.test.ts    # Tests for counter program
+│   └── README.md          # Examples documentation
+└── tools/
+    ├── murmur3.zig        # MurmurHash3-32 implementation
+    ├── syscall_defs.zig   # Syscall definitions
+    └── gen_syscalls.zig   # Syscall generator
 ```
 
 ## License

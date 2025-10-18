@@ -162,7 +162,7 @@ pub const AccountInfo = struct {
     // Borrow checking methods
 
     /// Check if can borrow data immutably
-    pub fn canBorrowData(self: AccountInfo) errors.ProgramResult!void {
+    pub fn canBorrowData(self: AccountInfo) errors.ProgramResult {
         const borrow_state = self.raw.borrow_state;
 
         // Check if mutably borrowed
@@ -177,7 +177,7 @@ pub const AccountInfo = struct {
     }
 
     /// Check if can borrow data mutably
-    pub fn canBorrowMutData(self: AccountInfo) errors.ProgramResult!void {
+    pub fn canBorrowMutData(self: AccountInfo) errors.ProgramResult {
         const borrow_state = self.raw.borrow_state;
 
         // Check if any borrow exists
@@ -187,7 +187,7 @@ pub const AccountInfo = struct {
     }
 
     /// Check if can borrow lamports immutably
-    pub fn canBorrowLamports(self: AccountInfo) errors.ProgramResult!void {
+    pub fn canBorrowLamports(self: AccountInfo) errors.ProgramResult {
         const borrow_state = self.raw.borrow_state;
 
         // Check if mutably borrowed
@@ -202,7 +202,7 @@ pub const AccountInfo = struct {
     }
 
     /// Check if can borrow lamports mutably
-    pub fn canBorrowMutLamports(self: AccountInfo) errors.ProgramResult!void {
+    pub fn canBorrowMutLamports(self: AccountInfo) errors.ProgramResult {
         const borrow_state = self.raw.borrow_state;
 
         // Check if any borrow exists
@@ -238,7 +238,7 @@ pub const AccountInfo = struct {
     // Safe borrows with RAII guards
 
     /// Borrow data immutably
-    pub fn tryBorrowData(self: AccountInfo) errors.ProgramResult!Ref([]const u8) {
+    pub fn tryBorrowData(self: AccountInfo) errors.ProgramError!Ref([]const u8) {
         try self.canBorrowData();
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));
@@ -254,7 +254,7 @@ pub const AccountInfo = struct {
     }
 
     /// Borrow data mutably
-    pub fn tryBorrowMutData(self: AccountInfo) errors.ProgramResult!RefMut([]u8) {
+    pub fn tryBorrowMutData(self: AccountInfo) errors.ProgramError!RefMut([]u8) {
         try self.canBorrowMutData();
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));
@@ -270,7 +270,7 @@ pub const AccountInfo = struct {
     }
 
     /// Borrow lamports immutably
-    pub fn tryBorrowLamports(self: AccountInfo) errors.ProgramResult!Ref(*const u64) {
+    pub fn tryBorrowLamports(self: AccountInfo) errors.ProgramError!Ref(*const u64) {
         try self.canBorrowLamports();
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));
@@ -285,7 +285,7 @@ pub const AccountInfo = struct {
     }
 
     /// Borrow lamports mutably
-    pub fn tryBorrowMutLamports(self: AccountInfo) errors.ProgramResult!RefMut(*u64) {
+    pub fn tryBorrowMutLamports(self: AccountInfo) errors.ProgramError!RefMut(*u64) {
         try self.canBorrowMutLamports();
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));

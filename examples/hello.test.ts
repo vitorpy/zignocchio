@@ -10,7 +10,7 @@ import { execSync, spawn, ChildProcess } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('Solana BPF Program', () => {
+describe('Hello World Program', () => {
   let validator: ChildProcess;
   let connection: Connection;
   let programId: PublicKey;
@@ -27,8 +27,8 @@ describe('Solana BPF Program', () => {
     // Wait a bit for cleanup
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Build the program
-    console.log('Building program...');
+    // Build the hello program
+    console.log('Building hello program...');
     execSync('zig build', { stdio: 'inherit' });
 
     // Generate program keypair for deployment
@@ -59,10 +59,9 @@ describe('Solana BPF Program', () => {
       programPath,
     ], {
       detached: true,
-      stdio: ['ignore', 'pipe', 'pipe'], // Capture stdout and stderr
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    // Log any validator errors (optional)
     validator.stderr?.on('data', (_data) => {
       // Suppressing validator stderr
     });
@@ -117,8 +116,8 @@ describe('Solana BPF Program', () => {
     }
   });
 
-  it('should execute entrypoint and log "Hello world!"', async () => {
-    // Create instruction - empty data since our program doesn't process it
+  it('should execute and log "Hello from Zignocchio!"', async () => {
+    // Create instruction - empty data
     const instruction = new TransactionInstruction({
       keys: [],
       programId,
@@ -150,11 +149,35 @@ describe('Solana BPF Program', () => {
     const logs = txDetails?.meta?.logMessages || [];
     console.log('Transaction logs:', logs);
 
-    // Check for "Hello world!" in logs
-    const hasHelloWorld = logs.some(log =>
-      log.includes('Hello world!')
+    // Check for "Hello from Zignocchio!" in logs
+    const hasMessage = logs.some(log =>
+      log.includes('Hello from Zignocchio!')
     );
 
-    expect(hasHelloWorld).toBe(true);
+    expect(hasMessage).toBe(true);
+  });
+
+  it('should succeed with no errors', async () => {
+    const instruction = new TransactionInstruction({
+      keys: [],
+      programId,
+      data: Buffer.alloc(0),
+    });
+
+    const transaction = new Transaction().add(instruction);
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      transaction,
+      [payer],
+      { commitment: 'confirmed' }
+    );
+
+    const txDetails = await connection.getTransaction(signature, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+
+    // Should not have any errors
+    expect(txDetails?.meta?.err).toBeNull();
   });
 });

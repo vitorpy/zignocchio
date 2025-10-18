@@ -9,14 +9,22 @@ pub fn build(b: *std.Build) !void {
     // Step 1: Generate LLVM bitcode using zig build-lib
     // Change this to counter.zig for the full-featured example
     const bitcode_path = "entrypoint.bc";
+
+    // Copy example to root for compilation (workaround for module paths)
+    const copy_example = b.addSystemCommand(&.{ "cp", "examples/counter.zig", "temp_example.zig" });
+
     const gen_bitcode = b.addSystemCommand(&.{
-        "zig", "build-lib",
-        "-target", "bpfel-freestanding",
-        "-O", "ReleaseSmall",
+        "zig",
+        "build-lib",
+        "-target",
+        "bpfel-freestanding",
+        "-O",
+        "ReleaseSmall",
         "-femit-llvm-bc=" ++ bitcode_path,
         "-fno-emit-bin",
-        "-Mroot=hello.zig",
+        "-Mroot=temp_example.zig",
     });
+    gen_bitcode.step.dependOn(&copy_example.step);
 
     // Step 2: Link with sbpf-linker
     const program_so_path = "zig-out/lib/program_name.so";
@@ -35,7 +43,7 @@ pub fn build(b: *std.Build) !void {
     // Optional unit tests (run on host, not BPF)
     const test_step = b.step("test", "Run unit tests");
     const test_module = b.createModule(.{
-        .root_source_file = b.path("hello.zig"),
+        .root_source_file = b.path("examples/hello.zig"),
         .target = b.graph.host,
         .optimize = optimize,
     });

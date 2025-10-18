@@ -31,33 +31,53 @@ A counter program that stores and increments a u64 value.
 
 ## Building
 
-To build these examples, you'll need to update `build.zig` to compile them instead of the current entrypoint.
+The default build target is `hello.zig`. To build:
 
-### Example build.zig modification
-
-```zig
-// Change this line:
-"-Mroot=src/entrypoint.zig",
-
-// To one of:
-"-Mroot=examples/hello.zig",
-"-Mroot=examples/counter.zig",
-```
-
-Then run:
 ```bash
 zig build
 ```
 
+To build the counter example instead, edit `build.zig` and change:
+```zig
+"-Mroot=examples/hello.zig",
+```
+to:
+```zig
+"-Mroot=examples/counter.zig",
+```
+
 ## Testing
 
-After building, you can test the programs using the existing test infrastructure:
+Each example has its own test file:
 
+- `hello.test.ts` - Tests for the hello world program
+- `counter.test.ts` - Tests for the counter program
+
+Run all tests:
 ```bash
 npm test
 ```
 
-Note: You'll need to update the test expectations to match the example program's behavior.
+Run a specific test:
+```bash
+npx jest examples/hello.test.ts
+npx jest examples/counter.test.ts
+```
+
+### What the tests cover
+
+**hello.test.ts:**
+- Program executes successfully
+- Logs "Hello from Zignocchio!" message
+- Returns success (no errors)
+
+**counter.test.ts:**
+- Creates a counter account
+- Increment operation (default and explicit)
+- Decrement operation
+- Reset operation
+- Proper logging of operations
+- Error handling for invalid operations
 
 ## Learning Path
 

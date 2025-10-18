@@ -3,6 +3,7 @@ zig-out/
 zig-cache/
 .zig-cache/
 *.bc
+*.ll
 *.o
 *.a
 *.so
@@ -38,3 +39,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+temp_example.zig
