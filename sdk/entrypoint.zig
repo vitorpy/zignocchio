@@ -45,7 +45,7 @@ pub fn deserialize(
 
     // Read number of accounts
     const num_accounts_ptr = @as(*const u64, @ptrCast(@alignCast(ptr)));
-    var num_accounts: usize = @intCast(num_accounts_ptr.*);
+    const num_accounts: usize = @intCast(num_accounts_ptr.*);
     ptr += @sizeOf(u64);
 
     var accounts_count: usize = 0;
@@ -123,9 +123,9 @@ pub const EntrypointFn = *const fn (
 pub fn entrypoint(
     comptime max_accounts: usize,
     comptime process_instruction: EntrypointFn,
-) fn ([*]u8) callconv(.C) u64 {
+) fn ([*]u8) callconv(.c) u64 {
     return struct {
-        fn entry(input: [*]u8) callconv(.C) u64 {
+        fn entry(input: [*]u8) callconv(.c) u64 {
             var accounts_buffer: [max_accounts]AccountInfo = undefined;
 
             const program_id, const accounts, const instruction_data =

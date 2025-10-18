@@ -72,9 +72,9 @@ pub const Account = extern struct {
 /// Borrow state masks
 pub const BorrowState = enum(u8) {
     /// Mask to check if account is borrowed (any borrow)
-    Borrowed = 0b_1111_1111,
+    Borrowed = 0b11111111,
     /// Mask to check if account is mutably borrowed
-    MutablyBorrowed = 0b_1000_1000,
+    MutablyBorrowed = 0b10001000,
 };
 
 /// Bit shift for lamports borrow tracking
@@ -84,10 +84,10 @@ const LAMPORTS_BORROW_SHIFT: u8 = 4;
 const DATA_BORROW_SHIFT: u8 = 0;
 
 /// Bitmask for lamports mutable borrow flag
-const LAMPORTS_MUTABLE_BORROW_BITMASK: u8 = 0b_1000_0000;
+const LAMPORTS_MUTABLE_BORROW_BITMASK: u8 = 0b10000000;
 
 /// Bitmask for data mutable borrow flag
-const DATA_MUTABLE_BORROW_BITMASK: u8 = 0b_0000_1000;
+const DATA_MUTABLE_BORROW_BITMASK: u8 = 0b00001000;
 
 /// Wrapper for Account providing safe access
 pub const AccountInfo = struct {
@@ -171,7 +171,7 @@ pub const AccountInfo = struct {
         }
 
         // Check if max immutable borrows reached
-        if (borrow_state & 0b_0000_0111 == 0) {
+        if (borrow_state & 0b00000111 == 0) {
             return error.AccountBorrowFailed;
         }
     }
@@ -181,7 +181,7 @@ pub const AccountInfo = struct {
         const borrow_state = self.raw.borrow_state;
 
         // Check if any borrow exists
-        if (borrow_state & 0b_0000_1111 != 0b_0000_1111) {
+        if (borrow_state & 0b00001111 != 0b00001111) {
             return error.AccountBorrowFailed;
         }
     }
@@ -196,7 +196,7 @@ pub const AccountInfo = struct {
         }
 
         // Check if max immutable borrows reached
-        if (borrow_state & 0b_0111_0000 == 0) {
+        if (borrow_state & 0b01110000 == 0) {
             return error.AccountBorrowFailed;
         }
     }
@@ -206,7 +206,7 @@ pub const AccountInfo = struct {
         const borrow_state = self.raw.borrow_state;
 
         // Check if any borrow exists
-        if (borrow_state & 0b_1111_0000 != 0b_1111_0000) {
+        if (borrow_state & 0b11110000 != 0b11110000) {
             return error.AccountBorrowFailed;
         }
     }
@@ -259,7 +259,7 @@ pub const AccountInfo = struct {
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));
         // Set mutable borrow bit to 0
-        borrow_state_ptr.* &= 0b_1111_0111;
+        borrow_state_ptr.* &= 0b11110111;
 
         const ptr = self.dataPtr();
         return RefMut([]u8){
@@ -290,7 +290,7 @@ pub const AccountInfo = struct {
 
         const borrow_state_ptr = @as(*u8, @ptrCast(&self.raw.borrow_state));
         // Set mutable borrow bit to 0
-        borrow_state_ptr.* &= 0b_0111_1111;
+        borrow_state_ptr.* &= 0b01111111;
 
         return RefMut(*u64){
             .value = &self.raw.lamports,

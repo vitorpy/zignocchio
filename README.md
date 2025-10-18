@@ -141,11 +141,8 @@ See [`sdk/README.md`](sdk/README.md) for complete documentation and [`examples/`
 │   ├── log.zig            # Logging utilities
 │   └── errors.zig         # Error types
 ├── examples/              # Example programs
-│   ├── hello.zig          # Minimal example
+│   ├── hello.zig          # Minimal example (default build target)
 │   └── counter.zig        # Full-featured example
-├── src/
-│   ├── entrypoint.zig     # Original simple entrypoint
-│   └── syscalls.zig       # Syscall bindings
 ├── tools/
 │   ├── murmur3.zig        # MurmurHash3-32 implementation
 │   ├── syscall_defs.zig   # Syscall definitions

@@ -87,7 +87,7 @@ pub const getReturnData = cpi.getReturnData;
 /// Create a program entrypoint with default max accounts (254)
 pub fn createEntrypoint(
     comptime process_instruction: entrypoint.EntrypointFn,
-) fn ([*]u8) callconv(.C) u64 {
+) fn ([*]u8) callconv(.c) u64 {
     return entrypoint.entrypoint(MAX_TX_ACCOUNTS, process_instruction);
 }
 
@@ -95,6 +95,6 @@ pub fn createEntrypoint(
 pub fn createEntrypointWithMaxAccounts(
     comptime max_accounts: usize,
     comptime process_instruction: entrypoint.EntrypointFn,
-) fn ([*]u8) callconv(.C) u64 {
+) fn ([*]u8) callconv(.c) u64 {
     return entrypoint.entrypoint(max_accounts, process_instruction);
 }

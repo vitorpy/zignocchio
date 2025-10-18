@@ -6,7 +6,7 @@
 //! - Safe mutable data access
 //! - Logging and error handling
 
-const sdk = @import("../sdk/zignocchio.zig");
+const sdk = @import("sdk/zignocchio.zig");
 
 /// Program entrypoint
 export fn entrypoint(input: [*]u8) u64 {
@@ -109,7 +109,7 @@ fn processInstruction(
     sdk.logMsg("Remaining compute units:");
     sdk.logU64(sdk.getRemainingComputeUnits());
 
-    return .{};
+    return {};
 }
 
 const std = @import("std");

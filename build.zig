@@ -7,6 +7,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = .ReleaseSmall;
 
     // Step 1: Generate LLVM bitcode using zig build-lib
+    // Change this to counter.zig for the full-featured example
     const bitcode_path = "entrypoint.bc";
     const gen_bitcode = b.addSystemCommand(&.{
         "zig", "build-lib",
@@ -14,7 +15,7 @@ pub fn build(b: *std.Build) !void {
         "-O", "ReleaseSmall",
         "-femit-llvm-bc=" ++ bitcode_path,
         "-fno-emit-bin",
-        "-Mroot=src/entrypoint.zig",
+        "-Mroot=hello.zig",
     });
 
     // Step 2: Link with sbpf-linker
@@ -34,7 +35,7 @@ pub fn build(b: *std.Build) !void {
     // Optional unit tests (run on host, not BPF)
     const test_step = b.step("test", "Run unit tests");
     const test_module = b.createModule(.{
-        .root_source_file = b.path("src/entrypoint.zig"),
+        .root_source_file = b.path("hello.zig"),
         .target = b.graph.host,
         .optimize = optimize,
     });

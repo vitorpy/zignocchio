@@ -2,7 +2,7 @@
 //!
 //! This is the simplest possible Solana program using Zignocchio.
 
-const sdk = @import("../sdk/zignocchio.zig");
+const sdk = @import("sdk/zignocchio.zig");
 
 /// Program entrypoint
 export fn entrypoint(input: [*]u8) u64 {
@@ -19,5 +19,5 @@ fn processInstruction(
     const message = [_]u8{ 'H', 'e', 'l', 'l', 'o', ' ', 'f', 'r', 'o', 'm', ' ', 'Z', 'i', 'g', 'n', 'o', 'c', 'c', 'h', 'i', 'o', '!' };
     sdk.logMsg(&message);
 
-    return .{};
+    return {};
 }
