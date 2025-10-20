@@ -16,9 +16,8 @@ Build Solana programs in Zig using the standard BPF target and [sbpf-linker](htt
 ## Prerequisites
 
 ```bash
-# Install sbpf-linker (must be in ../sbpf-linker)
-git clone https://github.com/blueshift-gg/sbpf-linker.git ../sbpf-linker
-cd ../sbpf-linker && cargo build
+# Install sbpf-linker from master (includes latest fixes)
+cargo install --git https://github.com/blueshift-gg/sbpf-linker.git
 
 # Install Zig 0.15.2 or later
 # Install Node.js for testing

@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) !void {
     // Step 2: Link with sbpf-linker
     const program_so_path = "zig-out/lib/program_name.so";
     const link_program = b.addSystemCommand(&.{
-        "../sbpf-linker/target/debug/sbpf-linker",
+        "sbpf-linker",
         "--cpu", "v2",  // v2: No 32-bit jumps (Solana sBPF compatible)
         "--export", "entrypoint",
         "-o", program_so_path,
