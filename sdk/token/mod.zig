@@ -8,6 +8,7 @@ const types = @import("../types.zig");
 // Re-export token state modules
 pub const mint = @import("mint.zig");
 pub const account = @import("account.zig");
+pub const instructions = @import("instructions/mod.zig");
 
 // Re-export commonly used types
 pub const Mint = mint.Mint;
