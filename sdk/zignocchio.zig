@@ -36,6 +36,7 @@ pub const entrypoint = @import("entrypoint.zig");
 pub const allocator = @import("allocator.zig");
 pub const pda = @import("pda.zig");
 pub const cpi = @import("cpi.zig");
+pub const token = @import("token.zig");
 
 // Re-export commonly used types
 pub const ProgramError = errors.ProgramError;
