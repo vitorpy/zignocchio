@@ -29,6 +29,7 @@
 //! - Amount validation: Prevents zero-amount transactions
 
 const sdk = @import("sdk");
+const initialize = @import("initialize.zig");
 const deposit = @import("deposit.zig");
 const withdraw = @import("withdraw.zig");
 
@@ -64,6 +65,10 @@ fn processInstruction(
         withdraw.DISCRIMINATOR => {
             sdk.logMsg("Token Vault: Routing to Withdraw");
             return withdraw.process(program_id, accounts);
+        },
+        initialize.DISCRIMINATOR => {
+            sdk.logMsg("Token Vault: Routing to Initialize");
+            return initialize.process(program_id, accounts);
         },
         else => {
             sdk.logMsg("Error: Unknown instruction discriminator");

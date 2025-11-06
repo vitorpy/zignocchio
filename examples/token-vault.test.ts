@@ -32,6 +32,7 @@ describe('Token Vault Program', () => {
   // Instruction discriminators
   const DEPOSIT = 0;
   const WITHDRAW = 1;
+  const INITIALIZE = 2;
 
   beforeAll(async () => {
     // Kill any existing test validator
@@ -146,35 +147,23 @@ describe('Token Vault Program', () => {
     vaultTokenAccount = vaultPda;
     console.log('Vault token account PDA:', vaultTokenAccount.toBase58());
 
-    // Create vault token account
-    const createVaultAccountIx = SystemProgram.createAccount({
-      fromPubkey: payer.publicKey,
-      newAccountPubkey: vaultTokenAccount,
-      lamports: await connection.getMinimumBalanceForRentExemption(165),
-      space: 165, // TokenAccount size
-      programId: TOKEN_PROGRAM_ID,
-    });
-
-    // Initialize vault token account
-    const initializeAccountData = Buffer.alloc(34);
-    initializeAccountData[0] = 18; // InitializeAccount3 discriminator
-    mint.toBuffer().copy(initializeAccountData, 1); // owner (the PDA itself)
-    vaultTokenAccount.toBuffer().copy(initializeAccountData, 33);
-
-    const initVaultAccountIx = new TransactionInstruction({
+    // Initialize vault via program instruction (creates PDA via CPI)
+    const RENT_SYSVAR = new PublicKey('SysvarRent111111111111111111111111111111111');
+    const initVaultIx = new TransactionInstruction({
       keys: [
         { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
         { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: payer.publicKey, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: RENT_SYSVAR, isSigner: false, isWritable: false },
       ],
-      programId: TOKEN_PROGRAM_ID,
-      data: Buffer.concat([
-        Buffer.from([18]), // InitializeAccount3
-        vaultTokenAccount.toBuffer(), // owner = vault PDA
-      ]),
+      programId,
+      data: Buffer.from([INITIALIZE]),
     });
 
-    const tx = new Transaction().add(createVaultAccountIx, initVaultAccountIx);
-    await sendAndConfirmTransaction(connection, tx, [payer]);
+    const initTx = new Transaction().add(initVaultIx);
+    await sendAndConfirmTransaction(connection, initTx, [payer]);
 
     console.log('Vault token account initialized');
   }, 60000);
@@ -197,92 +186,309 @@ describe('Token Vault Program', () => {
     }
   });
 
-  test('deposit tokens into vault', async () => {
-    console.log('\n=== Testing Deposit ===');
+  /**
+   * Helper: Create deposit instruction
+   */
+  function createDepositInstruction(
+    userTokenAccount: PublicKey,
+    vaultTokenAccount: PublicKey,
+    owner: PublicKey,
+    amount: bigint
+  ): TransactionInstruction {
+    const data = Buffer.alloc(9);
+    data[0] = DEPOSIT;
+    data.writeBigUInt64LE(amount, 1);
 
-    // Check initial balances
-    const userAccountBefore = await getAccount(connection, userTokenAccount);
-    const vaultAccountBefore = await getAccount(connection, vaultTokenAccount);
-
-    console.log('User balance before:', userAccountBefore.amount.toString());
-    console.log('Vault balance before:', vaultAccountBefore.amount.toString());
-
-    // Create deposit instruction
-    const depositAmount = BigInt(500_000_000); // 0.5 tokens
-    const depositData = Buffer.alloc(9);
-    depositData[0] = DEPOSIT;
-    depositData.writeBigUInt64LE(depositAmount, 1);
-
-    const depositIx = new TransactionInstruction({
+    return new TransactionInstruction({
       keys: [
         { pubkey: userTokenAccount, isSigner: false, isWritable: true },
         { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: payer.publicKey, isSigner: true, isWritable: false },
+        { pubkey: owner, isSigner: true, isWritable: false },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
       programId,
-      data: depositData,
+      data,
     });
+  }
 
-    // Send transaction
-    const tx = new Transaction().add(depositIx);
-    const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
-    console.log('Deposit signature:', sig);
-
-    // Check balances after
-    const userAccountAfter = await getAccount(connection, userTokenAccount);
-    const vaultAccountAfter = await getAccount(connection, vaultTokenAccount);
-
-    console.log('User balance after:', userAccountAfter.amount.toString());
-    console.log('Vault balance after:', vaultAccountAfter.amount.toString());
-
-    // Verify
-    expect(userAccountAfter.amount).toBe(userAccountBefore.amount - depositAmount);
-    expect(vaultAccountAfter.amount).toBe(vaultAccountBefore.amount + depositAmount);
-  }, 30000);
-
-  test('withdraw tokens from vault', async () => {
-    console.log('\n=== Testing Withdraw ===');
-
-    // Check initial balances
-    const userAccountBefore = await getAccount(connection, userTokenAccount);
-    const vaultAccountBefore = await getAccount(connection, vaultTokenAccount);
-
-    console.log('User balance before:', userAccountBefore.amount.toString());
-    console.log('Vault balance before:', vaultAccountBefore.amount.toString());
-
-    expect(vaultAccountBefore.amount).toBeGreaterThan(BigInt(0));
-
-    // Create withdraw instruction
-    const withdrawData = Buffer.from([WITHDRAW]);
-
-    const withdrawIx = new TransactionInstruction({
+  /**
+   * Helper: Create withdraw instruction
+   */
+  function createWithdrawInstruction(
+    vaultTokenAccount: PublicKey,
+    userTokenAccount: PublicKey,
+    owner: PublicKey
+  ): TransactionInstruction {
+    return new TransactionInstruction({
       keys: [
         { pubkey: vaultTokenAccount, isSigner: false, isWritable: true },
         { pubkey: userTokenAccount, isSigner: false, isWritable: true },
-        { pubkey: payer.publicKey, isSigner: true, isWritable: false },
+        { pubkey: owner, isSigner: true, isWritable: false },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
       programId,
-      data: withdrawData,
+      data: Buffer.from([WITHDRAW]),
     });
+  }
 
-    // Send transaction
-    const tx = new Transaction().add(withdrawIx);
-    const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
-    console.log('Withdraw signature:', sig);
+  describe('Deposit', () => {
+    it('should deposit tokens into vault', async () => {
+      console.log('\n=== Testing Deposit ===');
 
-    // Check balances after
-    const userAccountAfter = await getAccount(connection, userTokenAccount);
-    const vaultAccountAfter = await getAccount(connection, vaultTokenAccount);
+      // Check initial balances
+      const userAccountBefore = await getAccount(connection, userTokenAccount);
+      const vaultAccountBefore = await getAccount(connection, vaultTokenAccount);
 
-    console.log('User balance after:', userAccountAfter.amount.toString());
-    console.log('Vault balance after:', vaultAccountAfter.amount.toString());
+      console.log('User balance before:', userAccountBefore.amount.toString());
+      console.log('Vault balance before:', vaultAccountBefore.amount.toString());
 
-    // Verify
-    expect(vaultAccountAfter.amount).toBe(BigInt(0));
-    expect(userAccountAfter.amount).toBe(
-      userAccountBefore.amount + vaultAccountBefore.amount
-    );
-  }, 30000);
+      const depositAmount = BigInt(500_000_000); // 0.5 tokens
+
+      // Create and send deposit instruction
+      const depositIx = createDepositInstruction(
+        userTokenAccount,
+        vaultTokenAccount,
+        payer.publicKey,
+        depositAmount
+      );
+      const tx = new Transaction().add(depositIx);
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
+      console.log('Deposit signature:', sig);
+
+      // Check balances after
+      const userAccountAfter = await getAccount(connection, userTokenAccount);
+      const vaultAccountAfter = await getAccount(connection, vaultTokenAccount);
+
+      console.log('User balance after:', userAccountAfter.amount.toString());
+      console.log('Vault balance after:', vaultAccountAfter.amount.toString());
+
+      // Verify
+      expect(userAccountAfter.amount).toBe(userAccountBefore.amount - depositAmount);
+      expect(vaultAccountAfter.amount).toBe(vaultAccountBefore.amount + depositAmount);
+
+      // Verify logs
+      const txDetails = await connection.getTransaction(sig, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = txDetails?.meta?.logMessages || [];
+      console.log('Deposit logs:', logs);
+
+      const hasDepositLog = logs.some(log =>
+        log.includes('Deposit: Starting') || log.includes('Deposit: Transfer completed')
+      );
+      expect(hasDepositLog).toBe(true);
+    }, 30000);
+
+    it('should fail to deposit zero amount', async () => {
+      const depositIx = createDepositInstruction(
+        userTokenAccount,
+        vaultTokenAccount,
+        payer.publicKey,
+        BigInt(0)
+      );
+      const tx = new Transaction().add(depositIx);
+
+      await expect(
+        sendAndConfirmTransaction(connection, tx, [payer])
+      ).rejects.toThrow();
+    }, 30000);
+  });
+
+  describe('Withdraw', () => {
+    it('should withdraw all tokens from vault', async () => {
+      console.log('\n=== Testing Withdraw ===');
+
+      // Check initial balances
+      const userAccountBefore = await getAccount(connection, userTokenAccount);
+      const vaultAccountBefore = await getAccount(connection, vaultTokenAccount);
+
+      console.log('User balance before:', userAccountBefore.amount.toString());
+      console.log('Vault balance before:', vaultAccountBefore.amount.toString());
+
+      expect(vaultAccountBefore.amount).toBeGreaterThan(BigInt(0));
+
+      // Create and send withdraw instruction
+      const withdrawIx = createWithdrawInstruction(
+        vaultTokenAccount,
+        userTokenAccount,
+        payer.publicKey
+      );
+      const tx = new Transaction().add(withdrawIx);
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
+      console.log('Withdraw signature:', sig);
+
+      // Check balances after
+      const userAccountAfter = await getAccount(connection, userTokenAccount);
+      const vaultAccountAfter = await getAccount(connection, vaultTokenAccount);
+
+      console.log('User balance after:', userAccountAfter.amount.toString());
+      console.log('Vault balance after:', vaultAccountAfter.amount.toString());
+
+      // Verify
+      expect(vaultAccountAfter.amount).toBe(BigInt(0));
+      expect(userAccountAfter.amount).toBe(
+        userAccountBefore.amount + vaultAccountBefore.amount
+      );
+
+      // Verify logs
+      const txDetails = await connection.getTransaction(sig, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0,
+      });
+      const logs = txDetails?.meta?.logMessages || [];
+      console.log('Withdraw logs:', logs);
+
+      const hasWithdrawLog = logs.some(log =>
+        log.includes('Withdraw: Starting') || log.includes('Withdraw: Transfer completed')
+      );
+      expect(hasWithdrawLog).toBe(true);
+    }, 30000);
+
+    it('should fail to withdraw from empty vault', async () => {
+      const withdrawIx = createWithdrawInstruction(
+        vaultTokenAccount,
+        userTokenAccount,
+        payer.publicKey
+      );
+      const tx = new Transaction().add(withdrawIx);
+
+      // Should fail because vault is now empty
+      await expect(
+        sendAndConfirmTransaction(connection, tx, [payer])
+      ).rejects.toThrow();
+    }, 30000);
+  });
+
+  describe('Full Cycle', () => {
+    it('should complete a full deposit-withdraw cycle', async () => {
+      // Create new user with token account
+      const newUser = Keypair.generate();
+      const airdropSig = await connection.requestAirdrop(
+        newUser.publicKey,
+        5 * LAMPORTS_PER_SOL
+      );
+      await connection.confirmTransaction(airdropSig);
+
+      // Create token account for new user
+      const newUserTokenAccount = await createAccount(
+        connection,
+        payer,
+        mint,
+        newUser.publicKey
+      );
+
+      // Mint tokens to new user
+      await mintTo(
+        connection,
+        payer,
+        mint,
+        newUserTokenAccount,
+        mintAuthority,
+        1_000_000_000 // 1 token
+      );
+
+      // Derive vault token account PDA for new user
+      const [newVaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('vault'), newUser.publicKey.toBuffer()],
+        programId
+      );
+
+      // Initialize vault via program instruction
+      const RENT_SYSVAR = new PublicKey('SysvarRent111111111111111111111111111111111');
+      const initVaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: newVaultPda, isSigner: false, isWritable: true },
+          { pubkey: mint, isSigner: false, isWritable: false },
+          { pubkey: newUser.publicKey, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+          { pubkey: RENT_SYSVAR, isSigner: false, isWritable: false },
+        ],
+        programId,
+        data: Buffer.from([INITIALIZE]),
+      });
+
+      const setupTx = new Transaction().add(initVaultIx);
+      await sendAndConfirmTransaction(connection, setupTx, [newUser]);
+
+      const initialBalance = (await getAccount(connection, newUserTokenAccount)).amount;
+      console.log('Initial user token balance:', initialBalance.toString());
+
+      const depositAmount = BigInt(600_000_000); // 0.6 tokens
+
+      // Deposit
+      const depositIx = createDepositInstruction(
+        newUserTokenAccount,
+        newVaultPda,
+        newUser.publicKey,
+        depositAmount
+      );
+      const depositTx = new Transaction().add(depositIx);
+      await sendAndConfirmTransaction(connection, depositTx, [newUser]);
+
+      const vaultBalance = (await getAccount(connection, newVaultPda)).amount;
+      expect(vaultBalance).toBe(depositAmount);
+
+      // Withdraw
+      const withdrawIx = createWithdrawInstruction(
+        newVaultPda,
+        newUserTokenAccount,
+        newUser.publicKey
+      );
+      const withdrawTx = new Transaction().add(withdrawIx);
+      await sendAndConfirmTransaction(connection, withdrawTx, [newUser]);
+
+      const finalVaultBalance = (await getAccount(connection, newVaultPda)).amount;
+      expect(finalVaultBalance).toBe(BigInt(0));
+
+      const finalBalance = (await getAccount(connection, newUserTokenAccount)).amount;
+      console.log('Final user token balance:', finalBalance.toString());
+
+      // User should have exact same token balance
+      expect(finalBalance).toBe(initialBalance);
+    }, 60000);
+  });
+
+  describe('Security', () => {
+    it('should fail with wrong signer', async () => {
+      const wrongUser = Keypair.generate();
+      const airdropSig = await connection.requestAirdrop(
+        wrongUser.publicKey,
+        2 * LAMPORTS_PER_SOL
+      );
+      await connection.confirmTransaction(airdropSig);
+
+      // Try to deposit from payer's account but sign with wrong user
+      const depositIx = createDepositInstruction(
+        userTokenAccount,
+        vaultTokenAccount,
+        payer.publicKey,
+        BigInt(100_000_000)
+      );
+      const tx = new Transaction().add(depositIx);
+
+      // Should fail because wrongUser is signing but payer.publicKey is in the instruction
+      await expect(
+        sendAndConfirmTransaction(connection, tx, [wrongUser])
+      ).rejects.toThrow();
+    }, 30000);
+
+    it('should fail with invalid vault PDA', async () => {
+      // Use a random vault address instead of the correct PDA
+      const randomVault = Keypair.generate().publicKey;
+
+      const depositIx = createDepositInstruction(
+        userTokenAccount,
+        randomVault,
+        payer.publicKey,
+        BigInt(100_000_000)
+      );
+      const tx = new Transaction().add(depositIx);
+
+      await expect(
+        sendAndConfirmTransaction(connection, tx, [payer])
+      ).rejects.toThrow();
+    }, 30000);
+  });
 });
