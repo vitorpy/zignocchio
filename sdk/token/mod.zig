@@ -3,7 +3,13 @@
 //! This module provides constants and types for interacting with the SPL Token program.
 
 const std = @import("std");
-const types = @import("types.zig");
+const types = @import("../types.zig");
+
+// Re-export token state modules
+pub const mint = @import("mint.zig");
+
+// Re-export commonly used types
+pub const Mint = mint.Mint;
 
 /// SPL Token Program ID: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
 pub const TOKEN_PROGRAM_ID: types.Pubkey = .{
