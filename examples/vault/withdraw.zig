@@ -114,8 +114,8 @@ pub fn process(
     const bump_array = [_]u8{validated.bump};
     const signer_seeds = &[_][]const u8{
         "vault",
-        &seed_owner,
-        &bump_array,
+        seed_owner[0..],   // Explicit slice of pubkey bytes
+        bump_array[0..],   // Explicit slice of bump byte
     };
 
     // Execute CPI with PDA signature

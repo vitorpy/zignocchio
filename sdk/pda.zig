@@ -17,6 +17,12 @@ pub const MAX_SEED_LEN: usize = 32;
 /// Marker for program derived addresses
 pub const PDA_MARKER: []const u8 = "ProgramDerivedAddress";
 
+/// C-ABI structure for a single seed (matches SolSignerSeed in Agave)
+const SolSignerSeed = extern struct {
+    addr: u64,
+    len: u64,
+};
+
 /// Find a valid program derived address and its bump seed
 ///
 /// This function searches for a valid PDA by trying bump seeds from 255 down to 0.
@@ -38,8 +44,24 @@ pub fn findProgramAddress(
 ) errors.ProgramError!void {
     out_bump.* = 255;
 
+    // Convert seeds to C ABI format
+    var sol_seeds: [MAX_SEEDS]SolSignerSeed = undefined;
+    if (seeds.len > MAX_SEEDS) {
+        return error.MaxSeedLengthExceeded;
+    }
+
+    for (seeds, 0..) |seed, i| {
+        if (seed.len > MAX_SEED_LEN) {
+            return error.MaxSeedLengthExceeded;
+        }
+        sol_seeds[i] = SolSignerSeed{
+            .addr = @intFromPtr(seed.ptr),
+            .len = seed.len,
+        };
+    }
+
     const result = syscalls.sol_try_find_program_address(
-        @as([*]const u8, @ptrCast(seeds.ptr)),
+        @as([*]const u8, @ptrCast(&sol_seeds)),
         seeds.len,
         @as([*]const u8, @ptrCast(program_id)),
         @as([*]const u8, @ptrCast(out_address)),
@@ -73,16 +95,22 @@ pub fn createProgramAddress(
         return error.MaxSeedLengthExceeded;
     }
 
-    for (seeds) |seed| {
+    // Convert seeds to C ABI format
+    var sol_seeds: [MAX_SEEDS]SolSignerSeed = undefined;
+    for (seeds, 0..) |seed, i| {
         if (seed.len > MAX_SEED_LEN) {
             return error.MaxSeedLengthExceeded;
         }
+        sol_seeds[i] = SolSignerSeed{
+            .addr = @intFromPtr(seed.ptr),
+            .len = seed.len,
+        };
     }
 
     var address: Pubkey = undefined;
 
     const result = syscalls.sol_create_program_address(
-        @as([*]const u8, @ptrCast(seeds.ptr)),
+        @as([*]const u8, @ptrCast(&sol_seeds)),
         seeds.len,
         @as([*]const u8, @ptrCast(program_id)),
         &address,
