@@ -5,6 +5,7 @@
 // Re-export instruction builders
 pub const initialize_mint = @import("initialize_mint.zig");
 pub const initialize_account = @import("initialize_account.zig");
+pub const transfer = @import("transfer.zig");
 
 // Re-export commonly used types
 pub const InitializeMint = initialize_mint.InitializeMint;
@@ -12,3 +13,4 @@ pub const InitializeMint2 = initialize_mint.InitializeMint2;
 pub const InitializeAccount = initialize_account.InitializeAccount;
 pub const InitializeAccount2 = initialize_account.InitializeAccount2;
 pub const InitializeAccount3 = initialize_account.InitializeAccount3;
+pub const Transfer = transfer.Transfer;
