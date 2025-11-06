@@ -2,7 +2,7 @@
 //!
 //! This is the simplest possible Solana program using Zignocchio.
 
-const sdk = @import("sdk/zignocchio.zig");
+const sdk = @import("sdk");
 
 /// Program entrypoint
 export fn entrypoint(input: [*]u8) u64 {

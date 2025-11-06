@@ -6,15 +6,14 @@ const std = @import("std");
 pub fn build(b: *std.Build) !void {
     const optimize = .ReleaseSmall;
 
-    // Build option: which example to build (hello or counter)
-    const example_name = b.option([]const u8, "example", "Example to build (hello or counter)") orelse "counter";
+    // Build option: which example to build (hello, counter, or vault)
+    const example_name = b.option([]const u8, "example", "Example to build (hello, counter, or vault)") orelse "counter";
 
     // Step 1: Generate LLVM bitcode using zig build-lib
     const bitcode_path = "entrypoint.bc";
 
-    // Copy example to root for compilation (workaround for module paths)
-    const example_path = b.fmt("examples/{s}.zig", .{example_name});
-    const copy_example = b.addSystemCommand(&.{ "cp", example_path, "temp_example.zig" });
+    // All examples are now in examples/{name}/lib.zig
+    const example_path = b.fmt("examples/{s}/lib.zig", .{example_name});
 
     const gen_bitcode = b.addSystemCommand(&.{
         "zig",
@@ -25,9 +24,10 @@ pub fn build(b: *std.Build) !void {
         "ReleaseSmall",
         "-femit-llvm-bc=" ++ bitcode_path,
         "-fno-emit-bin",
-        "-Mroot=temp_example.zig",
+        "--dep", "sdk",
+        b.fmt("-Mroot={s}", .{example_path}),
+        "-Msdk=sdk/zignocchio.zig",
     });
-    gen_bitcode.step.dependOn(&copy_example.step);
 
     // Step 2: Link with sbpf-linker
     const program_so_path = "zig-out/lib/program_name.so";
@@ -46,7 +46,7 @@ pub fn build(b: *std.Build) !void {
     // Optional unit tests (run on host, not BPF)
     const test_step = b.step("test", "Run unit tests");
     const test_module = b.createModule(.{
-        .root_source_file = b.path("examples/hello.zig"),
+        .root_source_file = b.path("examples/hello/lib.zig"),
         .target = b.graph.host,
         .optimize = optimize,
     });

@@ -20,31 +20,34 @@ pub const PDA_MARKER: []const u8 = "ProgramDerivedAddress";
 /// Find a valid program derived address and its bump seed
 ///
 /// This function searches for a valid PDA by trying bump seeds from 255 down to 0.
-/// The first valid address found is returned along with its bump seed.
+/// The first valid address found is written to output parameters.
 ///
 /// # Arguments
 /// * `seeds` - Slice of seed slices used to derive the address
 /// * `program_id` - The program ID to use for derivation
+/// * `out_address` - Output parameter for the derived address
+/// * `out_bump` - Output parameter for the bump seed
 ///
 /// # Returns
-/// Tuple of (derived address, bump seed) or error if no valid address found
+/// Error if no valid address found
 pub fn findProgramAddress(
     seeds: []const []const u8,
     program_id: *const Pubkey,
-) errors.ProgramResult!struct { Pubkey, u8 } {
-    var address: Pubkey = undefined;
-    var bump_seed: u8 = 255;
+    out_address: *Pubkey,
+    out_bump: *u8,
+) errors.ProgramError!void {
+    out_bump.* = 255;
 
     const result = syscalls.sol_try_find_program_address(
         @as([*]const u8, @ptrCast(seeds.ptr)),
         seeds.len,
         @as([*]const u8, @ptrCast(program_id)),
-        &address,
-        &bump_seed,
+        @as([*]const u8, @ptrCast(out_address)),
+        @as([*]const u8, @ptrCast(out_bump)),
     );
 
     if (result == errors.SUCCESS) {
-        return .{ address, bump_seed };
+        return;
     }
 
     return error.MaxSeedLengthExceeded;
@@ -64,7 +67,7 @@ pub fn findProgramAddress(
 pub fn createProgramAddress(
     seeds: []const []const u8,
     program_id: *const Pubkey,
-) errors.ProgramResult!Pubkey {
+) errors.ProgramError!Pubkey {
     // Validate seeds
     if (seeds.len > MAX_SEEDS) {
         return error.MaxSeedLengthExceeded;
@@ -97,7 +100,7 @@ pub fn createWithSeed(
     base: *const Pubkey,
     seed: []const u8,
     program_id: *const Pubkey,
-) errors.ProgramResult!Pubkey {
+) errors.ProgramError!Pubkey {
     if (seed.len > MAX_SEED_LEN) {
         return error.MaxSeedLengthExceeded;
     }
