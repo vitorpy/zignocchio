@@ -6,6 +6,7 @@
 pub const initialize_mint = @import("initialize_mint.zig");
 pub const initialize_account = @import("initialize_account.zig");
 pub const transfer = @import("transfer.zig");
+pub const transfer_checked = @import("transfer_checked.zig");
 pub const mint_to = @import("mint_to.zig");
 pub const burn = @import("burn.zig");
 pub const close_account = @import("close_account.zig");
@@ -17,6 +18,7 @@ pub const InitializeAccount = initialize_account.InitializeAccount;
 pub const InitializeAccount2 = initialize_account.InitializeAccount2;
 pub const InitializeAccount3 = initialize_account.InitializeAccount3;
 pub const Transfer = transfer.Transfer;
+pub const TransferChecked = transfer_checked.TransferChecked;
 pub const MintTo = mint_to.MintTo;
 pub const MintToChecked = mint_to.MintToChecked;
 pub const Burn = burn.Burn;
