@@ -30,10 +30,10 @@ pub const InitializeAccount = struct {
     pub fn invoke(self: *const InitializeAccount) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.account.key()),
-            cpi.AccountMeta.readonly(self.mint.key()),
-            cpi.AccountMeta.readonly(self.owner.key()),
-            cpi.AccountMeta.readonly(self.rent_sysvar.key()),
+            .{ .pubkey = self.account.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint.key(), .is_writable = false, .is_signer = false },
+            .{ .pubkey = self.owner.key(), .is_writable = false, .is_signer = false },
+            .{ .pubkey = self.rent_sysvar.key(), .is_writable = false, .is_signer = false },
         };
 
         // Instruction data: just discriminator
@@ -72,9 +72,9 @@ pub const InitializeAccount2 = struct {
     pub fn invoke(self: *const InitializeAccount2) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.account.key()),
-            cpi.AccountMeta.readonly(self.mint.key()),
-            cpi.AccountMeta.readonly(self.rent_sysvar.key()),
+            .{ .pubkey = self.account.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint.key(), .is_writable = false, .is_signer = false },
+            .{ .pubkey = self.rent_sysvar.key(), .is_writable = false, .is_signer = false },
         };
 
         // Build instruction data: [discriminator:1][owner:32]
@@ -112,8 +112,8 @@ pub const InitializeAccount3 = struct {
     pub fn invoke(self: *const InitializeAccount3) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.account.key()),
-            cpi.AccountMeta.readonly(self.mint.key()),
+            .{ .pubkey = self.account.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint.key(), .is_writable = false, .is_signer = false },
         };
 
         // Build instruction data: [discriminator:1][owner:32]

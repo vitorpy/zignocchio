@@ -30,18 +30,18 @@ pub const TransferChecked = struct {
     decimals: u8,
 
     /// Invoke the TransferChecked instruction
-    pub fn invoke(self: *const TransferChecked) errors.ProgramError!void {
+    pub inline fn invoke(self: *const TransferChecked) errors.ProgramError!void {
         return self.invokeSigned(&.{});
     }
 
     /// Invoke the TransferChecked instruction with PDA signing
-    pub fn invokeSigned(self: *const TransferChecked, signers_seeds: []const []const []const u8) errors.ProgramError!void {
+    pub inline fn invokeSigned(self: *const TransferChecked, signers_seeds: []const []const u8) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.from.key()),
-            cpi.AccountMeta.readonly(self.mint.key()),
-            cpi.AccountMeta.writable(self.to.key()),
-            cpi.AccountMeta.signer(self.authority.key()),
+            .{ .pubkey = self.from.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint.key(), .is_writable = false, .is_signer = false },
+            .{ .pubkey = self.to.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.authority.key(), .is_writable = false, .is_signer = true },
         };
 
         // Build instruction data: [discriminator:1][amount:8][decimals:1]

@@ -25,17 +25,17 @@ pub const MintTo = struct {
     amount: u64,
 
     /// Invoke the MintTo instruction
-    pub fn invoke(self: *const MintTo) errors.ProgramError!void {
+    pub inline fn invoke(self: *const MintTo) errors.ProgramError!void {
         return self.invokeSigned(&.{});
     }
 
     /// Invoke the MintTo instruction with PDA signing
-    pub fn invokeSigned(self: *const MintTo, signers_seeds: []const []const []const u8) errors.ProgramError!void {
+    pub inline fn invokeSigned(self: *const MintTo, signers_seeds: []const []const u8) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.mint.key()),
-            cpi.AccountMeta.writable(self.account.key()),
-            cpi.AccountMeta.signer(self.mint_authority.key()),
+            .{ .pubkey = self.mint.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.account.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint_authority.key(), .is_writable = false, .is_signer = true },
         };
 
         // Build instruction data: [discriminator:1][amount:8]
@@ -75,17 +75,17 @@ pub const MintToChecked = struct {
     decimals: u8,
 
     /// Invoke the MintToChecked instruction
-    pub fn invoke(self: *const MintToChecked) errors.ProgramError!void {
+    pub inline fn invoke(self: *const MintToChecked) errors.ProgramError!void {
         return self.invokeSigned(&.{});
     }
 
     /// Invoke the MintToChecked instruction with PDA signing
-    pub fn invokeSigned(self: *const MintToChecked, signers_seeds: []const []const []const u8) errors.ProgramError!void {
+    pub inline fn invokeSigned(self: *const MintToChecked, signers_seeds: []const []const u8) errors.ProgramError!void {
         // Build account metas
         const account_metas = [_]cpi.AccountMeta{
-            cpi.AccountMeta.writable(self.mint.key()),
-            cpi.AccountMeta.writable(self.account.key()),
-            cpi.AccountMeta.signer(self.mint_authority.key()),
+            .{ .pubkey = self.mint.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.account.key(), .is_writable = true, .is_signer = false },
+            .{ .pubkey = self.mint_authority.key(), .is_writable = false, .is_signer = true },
         };
 
         // Build instruction data: [discriminator:1][amount:8][decimals:1]
