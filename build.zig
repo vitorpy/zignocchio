@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) !void {
     const link_program = b.addSystemCommand(&.{
         "sbpf-linker",
         "--cpu", "v2",  // v2: No 32-bit jumps (Solana sBPF compatible)
+        "--llvm-args=-bpf-stack-size=4096",  // Configure 4KB stack for Solana sBPF
         "--export", "entrypoint",
         "-o", program_so_path,
         bitcode_path,
