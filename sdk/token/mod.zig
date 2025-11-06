@@ -7,9 +7,11 @@ const types = @import("../types.zig");
 
 // Re-export token state modules
 pub const mint = @import("mint.zig");
+pub const account = @import("account.zig");
 
 // Re-export commonly used types
 pub const Mint = mint.Mint;
+pub const TokenAccount = account.TokenAccount;
 
 /// SPL Token Program ID: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
 pub const TOKEN_PROGRAM_ID: types.Pubkey = .{
