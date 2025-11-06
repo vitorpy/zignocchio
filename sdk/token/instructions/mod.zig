@@ -7,6 +7,7 @@ pub const initialize_mint = @import("initialize_mint.zig");
 pub const initialize_account = @import("initialize_account.zig");
 pub const transfer = @import("transfer.zig");
 pub const mint_to = @import("mint_to.zig");
+pub const burn = @import("burn.zig");
 
 // Re-export commonly used types
 pub const InitializeMint = initialize_mint.InitializeMint;
@@ -17,3 +18,5 @@ pub const InitializeAccount3 = initialize_account.InitializeAccount3;
 pub const Transfer = transfer.Transfer;
 pub const MintTo = mint_to.MintTo;
 pub const MintToChecked = mint_to.MintToChecked;
+pub const Burn = burn.Burn;
+pub const BurnChecked = burn.BurnChecked;
