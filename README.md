@@ -23,6 +23,8 @@ cargo install --git https://github.com/blueshift-gg/sbpf-linker.git
 # Install Node.js for testing
 ```
 
+**Note:** SPL Token support requires [sbpf-linker PR #14](https://github.com/blueshift-gg/sbpf-linker/pull/14) to be merged (adds `.rodata.cst32` section support for 32-byte constants).
+
 ## Building
 
 ```bash
